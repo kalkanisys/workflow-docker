@@ -1,0 +1,75 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ENV:
+        description: "The environment to deploy to"
+        type: string
+        required: true
+      QEMU_ARCH:
+        description: "The QEMU architecture to use"
+        required: true
+        type: string
+        default: "amd64"
+      DOWNLOAD_TASKFILE:
+        description: "Download the taskfile"
+        required: true
+        type: boolean
+        default: true
+      TASKFILE_VERSION:
+        description: "The version of the deployer taskfile"
+        required: true
+        type: string
+        default: "main"
+    secrets:
+      ACTION_GITHUB_TOKEN:
+        description: "GitHub token"
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ inputs.QEMU_ARCH }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.ACTION_GITHUB_TOKEN }}
+          version: 3
+
+      - name: Use upstream taskfile
+        if: ${{ inputs.DOWNLOAD_TASKFILE }}
+        run: |
+          echo "$(pwd)/.bin" >> $GITHUB_PATH
+          curl -o Taskfile.yml -L "https://github.com/kalkanisys/workflow-docker/raw/${{ inputs.TASKFILE_VERSION }}/Taskfile.yml"
+          if [ ! -f task ]; then echo '#!/bin/sh\nSCRIPT_DIR=$(dirname "$0")\ncat "$SCRIPT_DIR/Taskfile.yml" | task -t - "$@"' > task && chmod +x task; fi
+
+      - run: ENV=${{ inputs.ENV }} task print:vars -s >> $GITHUB_ENV
+
+      - name: Build docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          load: true
+          file: ${{ env.DOCKER_FILE }}
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy
+        run: |
+          DOCKER_BUILD_CMD="" ENV=${{ inputs.ENV }} task deploy

@@ -1,0 +1,29 @@
+name: Init for task and docker
+description: |
+  Initialize the task and docker commands for deployment
+
+inputs:
+  - QEMU_ARCH:
+    description: "The QEMU architecture to use"
+    required: true
+    default: "amd64"
+  - ACTION_GITHUB_TOKEN:
+    description: "GitHub token"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: ${{ inputs.QEMU_ARCH }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Install Task
+      uses: arduino/setup-task@v2
+      with:
+        repo-token: ${{ input.ACTION_GITHUB_TOKEN }}
+        version: 3.x

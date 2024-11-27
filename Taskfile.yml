@@ -69,16 +69,6 @@ tasks:
       - echo "CONFIG_DIR={{.CONFIG_DIR}}"
       - echo "DOCKER_FILE={{.DOCKER_FILE}}"
 
-  deploy:init:
-    run: once
-    cmds:
-      - >-
-        {{.RUN}} "
-        mkdir -p {{.STACK_DIR}} &&
-        touch {{.STACK_DIR}}/{{ print "{" .INIT_ENVS "}" }} &&
-        chmod 750 {{.STACK_DIR}}
-        "
-
   docker:build:
     cmds:
       - >-
@@ -98,7 +88,7 @@ tasks:
         ignore_error: true
       - | # https://gist.github.com/scy/6781836
         {{ if .DOCKER_PUSH_CMD }}{{.DOCKER_PUSH_CMD}}{{ else }}
-        {{ if eq .DOCKER_REGISTRY "localhost:{{.DOCKER_REGISTRY_PORT}}" }}
+        {{ if eq .DOCKER_REGISTRY (print "localhost:" .DOCKER_REGISTRY_PORT) }}
         export DOCKER_REGISTRY_PORT={{.DOCKER_REGISTRY_PORT}}
         {{.SSH}} -f -o ExitOnForwardFailure=yes -o ControlMaster=auto -o "ControlPath ~/.ssh/docker-{{.STACK}}-{{.DOCKER_REGISTRY_PORT}}" -N -T -M -L {{.DOCKER_REGISTRY_PORT}}:localhost:{{.DOCKER_REGISTRY_PORT}} {{.REMOTE_HOST}}
         docker push {{ .DOCKER_PUSH_ARGS }} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
@@ -109,7 +99,18 @@ tasks:
         {{ end }}
         {{ end }}
 
+  deploy:init:
+    run: once
+    cmds:
+      - >-
+        {{.RUN}} "
+        mkdir -p {{.STACK_DIR}} &&
+        touch {{.STACK_DIR}}/{{ print "{" .INIT_ENVS "}" }} &&
+        chmod 750 {{.STACK_DIR}}
+        "
+
   deploy:config:
+    run: once
     cmds:
       - |
         envsubst '${IMAGE_NAME},${IMAGE_TAG},${GIT_HASH},${STACK},${PROJECT}{{ .DEPLOY_ENV_LIST }}' < {{.DOCKER_COMPOSE_FILE}} | {{.RUN}} "cat >{{.STACK_DIR}}/docker-compose.yml"
@@ -120,6 +121,8 @@ tasks:
 
   deploy:run:
     cmds:
+      - task: deploy:init
+      - task: deploy:config
       - |
         {{.DEPLOY_PRE_RUN_CMD}}
         {{ if .DEPLOY_RUN_CMD }}{{.DEPLOY_RUN_CMD}}{{ else }}
@@ -129,8 +132,6 @@ tasks:
 
   deploy:
     cmds:
-      - task: deploy:init
       - task: docker:build
       - task: docker:push
-      - task: deploy:config
       - task: deploy:run

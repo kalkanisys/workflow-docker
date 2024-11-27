@@ -16,7 +16,7 @@ on:
         description: "Download the taskfile"
         required: false
         type: boolean
-        default: true
+        default: false
       TASKFILE_VERSION:
         description: "The version of the deployer taskfile"
         required: false
@@ -84,4 +84,5 @@ jobs:
 
       - name: Deploy
         run: |
-          DOCKER_BUILD_CMD="" ENV=${{ inputs.ENV }} task deploy
+          ENV=${{ inputs.ENV }} task docker:push
+          ENV=${{ inputs.ENV }} task deploy:run

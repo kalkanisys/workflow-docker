@@ -84,13 +84,13 @@ tasks:
   docker:push:
     cmds:
       - defer: |
-          [[ ! -z "$DOCKER_REGISTRY_PORT" ]] && {{.SSH}} -T -o "ControlPath ~/.ssh/docker-{{.STACK}}-{{.DOCKER_REGISTRY_PORT}}" -O "exit" {{.REMOTE_HOST}}
+          [[ ! -z "$DOCKER_REGISTRY_PORT" ]] && {{.SSH_CLI}} -T -o "ControlPath ~/.ssh/docker-{{.STACK}}-{{.DOCKER_REGISTRY_PORT}}" -O "exit" {{.REMOTE_HOST}}
         ignore_error: true
       - | # https://gist.github.com/scy/6781836
         {{ if .DOCKER_PUSH_CMD }}{{.DOCKER_PUSH_CMD}}{{ else }}
         {{ if eq .DOCKER_REGISTRY (print "localhost:" .DOCKER_REGISTRY_PORT) }}
         export DOCKER_REGISTRY_PORT={{.DOCKER_REGISTRY_PORT}}
-        {{.SSH}} -f -o ExitOnForwardFailure=yes -o ControlMaster=auto -o "ControlPath ~/.ssh/docker-{{.STACK}}-{{.DOCKER_REGISTRY_PORT}}" -N -T -M -L {{.DOCKER_REGISTRY_PORT}}:localhost:{{.DOCKER_REGISTRY_PORT}} {{.REMOTE_HOST}}
+        {{.SSH_CLI}} -f -o ExitOnForwardFailure=yes -o ControlMaster=auto -o "ControlPath ~/.ssh/docker-{{.STACK}}-{{.DOCKER_REGISTRY_PORT}}" -N -T -M -L {{.DOCKER_REGISTRY_PORT}}:localhost:{{.DOCKER_REGISTRY_PORT}} {{.REMOTE_HOST}}
         docker push {{ .DOCKER_PUSH_ARGS }} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
         {{ else if .DOCKER_REGISTRY }}
         docker push {{ .DOCKER_PUSH_ARGS }} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
@@ -116,7 +116,7 @@ tasks:
         envsubst '${IMAGE_NAME},${IMAGE_TAG},${GIT_HASH},${STACK},${PROJECT}{{ .DEPLOY_ENV_LIST }}' < {{.DOCKER_COMPOSE_FILE}} | {{.RUN}} "cat >{{.STACK_DIR}}/docker-compose.yml"
 
         {{ if .DEPLOY_CONFIG_CMD }}{{.DEPLOY_CONFIG_CMD}}{{else if .CONFIG_DIR}}
-        [[ -d {{.CONFIG_DIR}} ]] && rsync -e "{{.SSH}}" -avP --delete {{.CONFIG_DIR}}/ {{.REMOTE_HOST}}{{.STACK_DIR}}/"
+        [[ ! -d {{.CONFIG_DIR}} ]] || rsync -e "{{.SSH_CLI}}" -avP {{.CONFIG_DIR}}/ {{.REMOTE_HOST}}{{.STACK_DIR}}/config
         {{ end }}
 
   deploy:run:

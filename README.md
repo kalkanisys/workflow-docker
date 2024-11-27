@@ -33,7 +33,7 @@ on:
 
 jobs:
   deploy:
-    uses: kalkani/workflow-docker/.github/workflows/deploy.yml@main
+    uses: kalkanisys/workflow-docker/.github/workflows/deploy.yml@main
     with:
       ENV: "prod"
       QEMU_ARCH: "amd64"
@@ -41,6 +41,8 @@ jobs:
       TASKFILE_VERSION: "main"
     secrets:
       ACTION_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
 ```
 
 This example triggers the deploy workflow on every push to the `main` branch, deploying the application to the `prod` environment.

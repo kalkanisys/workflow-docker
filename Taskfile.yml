@@ -23,6 +23,8 @@ vars:
   DOCKER_REGISTRY: ""
   DOCKER_COMPOSE_FILE: docker-compose.deploy.yml
   DOCKER_BUILD_ARGS: ""
+  DOCKER_PUSH_ARGS: ""
+  DOCKER_LOAD_ARGS: ""
   DOCKER_REGISTRY_PORT: "5000"
   DOCKER_FILE: Dockerfile
 
@@ -58,7 +60,6 @@ env:
 tasks:
   print:vars:
     cmds:
-      - echo "ENV={{.ENV}}"
       - echo "STACK={{.STACK}}"
       - echo "STACK_DIR={{.STACK_DIR}}"
       - echo "GIT_HASH={{.GIT_HASH}}"

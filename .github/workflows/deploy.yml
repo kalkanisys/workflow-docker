@@ -9,23 +9,29 @@ on:
         required: true
       QEMU_ARCH:
         description: "The QEMU architecture to use"
-        required: true
+        required: false
         type: string
         default: "amd64"
       DOWNLOAD_TASKFILE:
         description: "Download the taskfile"
-        required: true
+        required: false
         type: boolean
         default: true
       TASKFILE_VERSION:
         description: "The version of the deployer taskfile"
-        required: true
+        required: false
         type: string
         default: "main"
     secrets:
       ACTION_GITHUB_TOKEN:
         description: "GitHub token"
         required: false
+      SSH_KEY:
+        description: "SSH private key"
+        required: true
+      KNOWN_HOSTS:
+        description: "SSH known hosts"
+        required: true
 
 jobs:
   deploy:
@@ -35,6 +41,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-tags: true
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
